@@ -1,0 +1,22 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build the Docker image
+      run: |
+        source VERSION
+        docker build -t docker.pkg.github.com/hadar-simulator/simple-server/server:$VERSION .
+        docker login docker.pkg.github.com -u $GITHUB_ACTOR -p $TOKEN
+        docker push docker.pkg.github.com/hadar-simulator/simple-server/server:$VERSION
+      env:
+        TOKEN: ${{ secrets.GITHUB_TOKEN }}
