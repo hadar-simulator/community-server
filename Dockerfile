@@ -10,7 +10,7 @@ RUN pip3 install --no-cache gunicorn
 
 ADD requirements.txt /app/requirements.txt
 RUN pip3 install --no-cache -r /app/requirements.txt
-ADD server.py /app/server.py
+ADD server/server.py /app/server.py
 ADD wsgi.py /app/wsgi.py
 
 

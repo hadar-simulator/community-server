@@ -1,2 +1,2 @@
-hadar
 flask
+--find-links=../hadar/dist/

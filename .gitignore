@@ -1,3 +1,7 @@
 **/.idea
 **/venv
 *.pyc
+
+*.tar.gz
+
+*.sqlite3
