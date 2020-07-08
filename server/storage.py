@@ -2,7 +2,6 @@ import hashlib
 import os
 import pickle
 import sqlite3
-import threading
 
 import hadar as hd
 
@@ -11,18 +10,6 @@ def get_hash(array):
     m = hashlib.sha256()
     m.update(array)
     return m.hexdigest()
-
-
-class Singleton(type):
-    """
-    Singleton metaclass used by repository
-    """
-    _instances = {}
-
-    def __call__(cls, *args, **kwargs):
-        if cls not in cls._instances:
-            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
-        return cls._instances[cls]
 
 
 class Job:
@@ -39,7 +26,7 @@ class Job:
         return self.id, pickle.dumps(self.study), self.status, pickle.dumps(self.result)
 
 
-class JobRepository(metaclass=Singleton):
+class JobRepository:
     """
     Repository to manage sqlite3 database
     """
@@ -55,7 +42,6 @@ class JobRepository(metaclass=Singleton):
         self.cur = self.conn.cursor()
         self.cur.execute("create table if not exists job (id TEXT PRIMARY KEY, study BLOB, status TEXT, result BLOB)")
         self.conn.commit()
-        self.lock = threading.Lock()
 
     def save(self, job: Job):
         """
@@ -64,23 +50,32 @@ class JobRepository(metaclass=Singleton):
         :param job: job to save
         :return:
         """
-        self.lock.acquire()
         data = job.__reduce__()
         data = data + data[2:]
         self.cur.execute("""INSERT INTO job (id, study, status, result) VALUES (?, ?, ?, ?)
                             ON CONFLICT(id) 
                             DO UPDATE SET status=?, result=?;""", data)
         self.conn.commit()
-        self.lock.release()
+        return job.id
 
-    def get(self, id: str):
+    def get(self, job_id: str):
         """
         Get job by id.
 
-        :param id: job id
+        :param job_id: job id
         :return: job with matching id
         """
-        self.lock.acquire()
-        id, study, status, result = self.cur.execute("SELECT * FROM job WHERE id = ?", (id,)).fetchone()
-        self.lock.release()
-        return Job(id=id, study=pickle.loads(study), status=status, result=pickle.loads(result))
+        res = self.cur.execute("SELECT * FROM job WHERE id = ?", (job_id,)).fetchone()
+        if res:
+            job_id, study, status, result = res
+            return Job(id=job_id, study=pickle.loads(study), status=status, result=pickle.loads(result))
+        else:
+            return Job(study=None)
+
+    def delete_terminated(self):
+        """
+        Delete job terminated
+        :return:
+        """
+        self.cur.execute("DELETE FROM job WHERE status = 'TERMINATED'")
+        self.conn.commit()
