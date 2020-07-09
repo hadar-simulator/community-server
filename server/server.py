@@ -23,12 +23,15 @@ def schedule():
         job = todo.get()
         job.status = 'COMPUTING'
         repo.save(job)
-
-        res = optim.solve(job.study)
-        sleep(2)
-        job.status = 'TERMINATED'
-        job.result = res
-        repo.save(job)
+        try:
+            res = optim.solve(job.study)
+            job.status = 'TERMINATED'
+            job.result = res
+        except Exception as e:
+            job.status = 'ERROR'
+            job.error = str(e)
+        finally:
+            repo.save(job)
 
 
 def garbage():
@@ -55,6 +58,12 @@ def create_app():
     return app
 
 
+def auth():
+    token = os.environ.get('ACCESS_TOKEN', None)
+    if token is not None and request.args['token'] != token:
+        abort(403, 'Wrong access token given')
+
+
 todo = queue.Queue()
 application = create_app()
 
@@ -66,9 +75,7 @@ def send_study():
 
     :return:
     """
-    token = os.environ.get('ACCESS_TOKEN', None)
-    if token is not None and request.args['token'] != token:
-        abort(403, 'Wrong access token given')
+    auth()
 
     print('Receive study', end=' ')
     repo = JobRepository()
@@ -89,19 +96,21 @@ def get_result(job_id: str):
     :param job_id: job is to check
     :return: just job status or status + result if job terminated
     """
-    token = os.environ.get('ACCESS_TOKEN', None)
-    if token is not None and request.args['token'] != token:
-        abort(403, 'Wrong access token given')
+    auth()
 
     repo = JobRepository()
-    print('id=', job_id)
     job = repo.get(job_id)
     if job is None:
         abort(404, 'Job id not found')
-    if job.status in ['QUEUED', 'COMPUTING']:
+
+    elif job.status == 'QUEUED':
+        return pickle.dumps({'status': job.status, 'before': repo.count_jobs_before(job)})
+    elif job.status in 'COMPUTING':
         return pickle.dumps({'status': job.status})
     elif job.status == 'TERMINATED':
         return pickle.dumps({'status': job.status, 'result': job.result})
+    elif job.status == 'ERROR':
+        return pickle.dumps({'status': job.status, 'message': job.error})
 
 
 if __name__ == '__main__':
