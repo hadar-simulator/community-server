@@ -7,7 +7,7 @@ from time import sleep
 from flask import Flask, request, abort
 import hadar as hd
 
-from storage import JobRepository, Job
+from storage import JobRepository, Job, sha256
 
 
 def schedule():
@@ -43,7 +43,7 @@ def garbage():
     repo = JobRepository()
     while True:
         repo.delete_terminated()
-        sleep(60)
+        sleep(int(os.getenv('GARBAGE_LOOP_SEC', '60')))
 
 
 def create_app():
@@ -60,7 +60,7 @@ def create_app():
 
 def auth():
     token = os.environ.get('ACCESS_TOKEN', None)
-    if token is not None and request.args['token'] != token:
+    if token is not None and sha256(request.args['token'].encode()) != sha256(token.encode()):
         abort(403, 'Wrong access token given')
 
 
@@ -85,7 +85,7 @@ def send_study():
         repo.save(job)
         todo.put(job)
 
-    return pickle.dumps({'job': job.id, 'status': 'QUEUED'})
+    return pickle.dumps({'job': job.id, 'status': 'QUEUED', 'progress': repo.count_jobs_before(job)})
 
 
 @application.route("/result/<job_id>", methods=['GET'])
@@ -96,7 +96,7 @@ def get_result(job_id: str):
     :param job_id: job is to check
     :return: just job status or status + result if job terminated
     """
-    auth()
+    # auth()
 
     repo = JobRepository()
     job = repo.get(job_id)
@@ -104,9 +104,9 @@ def get_result(job_id: str):
         abort(404, 'Job id not found')
 
     elif job.status == 'QUEUED':
-        return pickle.dumps({'status': job.status, 'before': repo.count_jobs_before(job)})
+        return pickle.dumps({'status': job.status, 'progress': repo.count_jobs_before(job)})
     elif job.status in 'COMPUTING':
-        return pickle.dumps({'status': job.status})
+        return pickle.dumps({'status': job.status, 'progress': 0})
     elif job.status == 'TERMINATED':
         return pickle.dumps({'status': job.status, 'result': job.result})
     elif job.status == 'ERROR':
@@ -114,5 +114,5 @@ def get_result(job_id: str):
 
 
 if __name__ == '__main__':
-    application.run(debug=True, host='0.0.0.0', port=5002)
+    application.run(debug=True, host='0.0.0.0', port=5005)
 

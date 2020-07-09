@@ -7,7 +7,7 @@ import time
 import hadar as hd
 
 
-def get_hash(array):
+def sha256(array):
     m = hashlib.sha256()
     m.update(array)
     return m.hexdigest()
@@ -26,7 +26,7 @@ class Job:
         self.study = study
         self.created = int(time.time() * 1000) if created is None else created
         self.status = status
-        self.id = get_hash(pickle.dumps(study)) if id is None else id
+        self.id = sha256(pickle.dumps(study)) if id is None else id
         self.result = result
         self.error = error
 

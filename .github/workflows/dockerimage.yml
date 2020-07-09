@@ -14,8 +14,9 @@ jobs:
     - uses: actions/checkout@v2
     - name: Build the Docker image
       run: |
-        source VERSION
-        docker build -t docker.pkg.github.com/hadar-simulator/simple-server/server:$VERSION .
+        export PYTHONPATH=$(pwd)
+        export VERSION=$(python3 -c "import server; print(server.__version__)")
+        docker build -t docker.pkg.github.com/hadar-simulator/simple-server/server:$VERSION -f deploy/Dockerfile .
         docker login docker.pkg.github.com -u $GITHUB_ACTOR -p $TOKEN
         docker push docker.pkg.github.com/hadar-simulator/simple-server/server:$VERSION
       env:
