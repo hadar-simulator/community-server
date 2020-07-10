@@ -67,7 +67,7 @@ class JobRepository:
         data = job.__reduce__()
         exist = self.get(job.id) is not None
         if exist:
-            self.cur.execute("UPDATE job SET status = ?, result = ?, error = ?", data[3:])
+            self.cur.execute("UPDATE job SET status = ?, result = ?, error = ? WHERE id = ?", data[3:] + (job.id,))
         else:
             self.cur.execute("INSERT INTO job (id, study, created, status, result, error) VALUES (?, ?, ?, ?, ?, ?);", data)
         self.conn.commit()

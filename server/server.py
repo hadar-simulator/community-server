@@ -10,7 +10,7 @@ import hadar as hd
 from storage import JobRepository, Job, sha256
 
 
-def schedule():
+def worker():
     """
     Wait job from queue. Start compute. Store any changing job state during process.
 
@@ -32,6 +32,7 @@ def schedule():
             job.error = str(e)
         finally:
             repo.save(job)
+            todo.task_done()
 
 
 def garbage():
@@ -53,7 +54,7 @@ def create_app():
     :return: Flask app
     """
     app = Flask(__name__)
-    threading.Thread(target=schedule).start()
+    threading.Thread(target=worker).start()
     threading.Thread(target=garbage).start()
     return app
 
@@ -96,7 +97,7 @@ def get_result(job_id: str):
     :param job_id: job is to check
     :return: just job status or status + result if job terminated
     """
-    # auth()
+    auth()
 
     repo = JobRepository()
     job = repo.get(job_id)
