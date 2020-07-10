@@ -114,5 +114,5 @@ def get_result(job_id: str):
 
 
 if __name__ == '__main__':
-    application.run(debug=True, host='0.0.0.0', port=5005)
+    application.run(debug=True, host='0.0.0.0', port=5002)
 

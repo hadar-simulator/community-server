@@ -65,10 +65,11 @@ class JobRepository:
         :return:
         """
         data = job.__reduce__()
-        data = data + data[3:]
-        self.cur.execute("""INSERT INTO job (id, study, created, status, result, error) VALUES (?, ?, ?, ?, ?, ?)
-                            ON CONFLICT(id) 
-                            DO UPDATE SET status=?, result=?, error=?;""", data)
+        exist = self.get(job.id) is not None
+        if exist:
+            self.cur.execute("UPDATE job SET status = ?, result = ?, error = ?", data[3:])
+        else:
+            self.cur.execute("INSERT INTO job (id, study, created, status, result, error) VALUES (?, ?, ?, ?, ?, ?);", data)
         self.conn.commit()
         return job.id
 
