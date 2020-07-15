@@ -57,6 +57,11 @@ class JobRepository:
                             error TEXT)""")
         self.conn.commit()
 
+        # Remove all study from computing to queued
+        self.cur.execute("""UPDATE job SET status = 'QUEUED'
+                            WHERE status = 'COMPUTING'""")
+        self.conn.commit()
+
     def save(self, job: Job):
         """
         Save job, create if not exist update else.
@@ -97,5 +102,20 @@ class JobRepository:
         self.conn.commit()
 
     def count_jobs_before(self, job: Job):
+        """
+        Get number of jobs to be computed before this one.
+
+        :param job: job given
+        :return: number of jobs before
+        """
         return self.cur.execute("SELECT COUNT(*) FROM job WHERE (status = 'QUEUED' AND created < ?)", (job.created,))\
             .fetchone()[0]
+
+    def get_next(self):
+        res = self.cur.execute("""SELECT * FROM job
+                                  WHERE created = (SELECT MIN(created) FROM job WHERE status = 'QUEUED');""").fetchone()
+        if res:
+            job_id, study, created, status, result, error = res
+            return Job(id=job_id, study=pickle.loads(study), created=created, status=status, result=pickle.loads(result), error=error)
+        else:
+            return None

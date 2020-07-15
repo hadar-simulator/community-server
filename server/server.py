@@ -1,6 +1,5 @@
 import os
 import pickle
-import queue
 import threading
 from time import sleep
 
@@ -19,20 +18,24 @@ def worker():
     optim = hd.LPOptimizer()
     repo = JobRepository()
     while True:
-        print('Ready for next job')
-        job = todo.get()
-        job.status = 'COMPUTING'
-        repo.save(job)
-        try:
-            res = optim.solve(job.study)
-            job.status = 'TERMINATED'
-            job.result = res
-        except Exception as e:
-            job.status = 'ERROR'
-            job.error = str(e)
-        finally:
+        job = repo.get_next()
+        if job:
+            job.status = 'COMPUTING'
             repo.save(job)
-            todo.task_done()
+            try:
+                print('Start job:', job.id)
+                res = optim.solve(job.study)
+                job.status = 'TERMINATED'
+                job.result = res
+                print('Finish job:', job.id)
+            except Exception as e:
+                job.status = 'ERROR'
+                job.error = str(e)
+                print('Error on job:', job.id)
+            finally:
+                repo.save(job)
+        else:
+            sleep(1)
 
 
 def garbage():
@@ -65,9 +68,8 @@ def auth():
         abort(403, 'Wrong access token given')
 
 
-todo = queue.Queue()
 application = create_app()
-
+JobRepository()
 
 @application.route("/study", methods=['POST'])
 def send_study():
@@ -84,9 +86,8 @@ def send_study():
     job = Job(study)
     if repo.get(job.id) is None:
         repo.save(job)
-        todo.put(job)
 
-    return pickle.dumps({'job': job.id, 'status': 'QUEUED', 'progress': repo.count_jobs_before(job)})
+    return pickle.dumps({'job': job.id, 'status': 'QUEUED', 'progress': max(1, repo.count_jobs_before(job))})
 
 
 @application.route("/result/<job_id>", methods=['GET'])
@@ -115,5 +116,5 @@ def get_result(job_id: str):
 
 
 if __name__ == '__main__':
-    application.run(debug=True, host='0.0.0.0', port=5002)
+    application.run(debug=True, host='0.0.0.0', port=5007)
 

@@ -48,3 +48,21 @@ class TestJobRepository(unittest.TestCase):
 
         job = self.repo.get(j)
         self.assertEqual(2, self.repo.count_jobs_before(job))
+
+    def test_get_next(self):
+        first = self.repo.save(Job(study='111', status='QUEUED'))
+        sleep(0.1)
+        self.repo.save(Job(study='222', status='COMPUTING'))
+        sleep(0.1)
+        second = self.repo.save(Job(study='333', status='QUEUED'))
+        sleep(0.1)
+        self.repo.save(Job(study='444', status='TERMINATED'))
+
+        job = self.repo.get_next()
+        self.assertEqual(first, job.id)
+
+        job.status = 'TERMINATED'
+        self.repo.save(job)
+
+        job = self.repo.get_next()
+        self.assertEqual(second, job.id)
