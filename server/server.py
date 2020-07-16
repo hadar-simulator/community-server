@@ -17,6 +17,7 @@ def worker():
     """
     optim = hd.LPOptimizer()
     repo = JobRepository()
+
     while True:
         job = repo.get_next()
         if job:
@@ -45,6 +46,7 @@ def garbage():
     :return:
     """
     repo = JobRepository()
+
     while True:
         repo.delete_terminated()
         sleep(int(os.getenv('GARBAGE_LOOP_SEC', '60')))
@@ -68,8 +70,8 @@ def auth():
         abort(403, 'Wrong access token given')
 
 
+JobRepository()  # Start before eveyone to create table
 application = create_app()
-JobRepository()
 
 @application.route("/study", methods=['POST'])
 def send_study():
@@ -79,9 +81,9 @@ def send_study():
     :return:
     """
     auth()
+    repo = JobRepository()
 
     print('Receive study', end=' ')
-    repo = JobRepository()
     study = pickle.loads(request.data)
     job = Job(study)
     if repo.get(job.id) is None:
@@ -116,5 +118,5 @@ def get_result(job_id: str):
 
 
 if __name__ == '__main__':
-    application.run(debug=True, host='0.0.0.0', port=5007)
+    application.run(debug=False, host='0.0.0.0', port=5007)
 
