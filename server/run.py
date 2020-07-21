@@ -3,10 +3,11 @@ import pickle
 import threading
 from time import sleep
 
-from flask import Flask, request, abort
+from flask import Flask, request, abort, render_template
 import hadar as hd
 
-from storage import JobRepository, Job, sha256
+from server.storage import JobRepository, Job, sha256
+import server
 
 
 def worker():
@@ -72,6 +73,10 @@ def auth():
 
 JobRepository()  # Start before eveyone to create table
 application = create_app()
+
+@application.route('/', methods=['GET'])
+def home():
+    return render_template('home.html', version=server.__version__)
 
 @application.route("/study", methods=['POST'])
 def send_study():
