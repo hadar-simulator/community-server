@@ -5,7 +5,7 @@ Deploy a server to resolve study on a remote hadar solver
 ### From server side
 start docker image:
 
-`docker run -p 8080:8080 docker.pkg.github.com/hadar-simulator/simple-server/server:lastest`
+`docker run -p 8080:8080 docker.pkg.github.com/hadar-simulator/community-server/server:lastest`
 
 Add: `-e ACCESS_TOKEN=<YOUR_TOKEN>`to apply an basic authentication on your server
 
