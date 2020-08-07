@@ -6,39 +6,8 @@ from time import sleep
 from flask import Flask, request, abort, render_template
 import hadar as hd
 
-from schelduler.storage import JobRepository, Job, sha256
-import schelduler
-
-
-def worker():
-    """
-    Wait job from queue. Start compute. Store any changing job state during process.
-
-    :return:
-    """
-    optim = hd.LPOptimizer()
-    repo = JobRepository()
-
-    while True:
-        job = repo.get_next()
-        if job:
-            job.status = 'COMPUTING'
-            repo.save(job)
-            try:
-                print('Start job:', job.id)
-                res = optim.solve(job.study)
-                job.status = 'TERMINATED'
-                job.result = res
-                print('Finish job:', job.id)
-            except Exception as e:
-                job.status = 'ERROR'
-                job.error = str(e)
-                print('Error on job:', job.id)
-            finally:
-                repo.save(job)
-        else:
-            sleep(1)
-
+from scheduler.storage import JobRepository, Job, sha256
+import scheduler
 
 def garbage():
     """
@@ -53,16 +22,6 @@ def garbage():
         sleep(int(os.getenv('GARBAGE_LOOP_SEC', '60')))
 
 
-def create_app():
-    """
-    Create Flask app. Start threads.
-
-    :return: Flask app
-    """
-    app = Flask(__name__)
-    return app
-
-
 def auth():
     token = os.environ.get('ACCESS_TOKEN', None)
     if token is not None and sha256(request.args['token'].encode()) != sha256(token.encode()):
@@ -70,12 +29,12 @@ def auth():
 
 
 repo = JobRepository()  # Start before everyone to create table
-application = create_app()
+application = Flask(__name__)
 
 
 @application.route('/', methods=['GET'])
 def home():
-    return render_template('home.html', version=schelduler.__version__)
+    return render_template('home.html', version=scheduler.__version__)
 
 
 @application.route("/study", methods=['POST'])
@@ -140,7 +99,8 @@ def update_job(id: int):
     job = pickle.loads(request.data)
     job.status = 'TERMINATED'
     repo.save(job)
-    return {}, 200
+    return id, 200
+
 
 if __name__ == '__main__':
     application.run(debug=False, host='0.0.0.0', port=5007)

@@ -1,4 +1,4 @@
-from schelduler.server import application
+from scheduler.server import application
 
 if __name__ == '__main__':
     application.run()

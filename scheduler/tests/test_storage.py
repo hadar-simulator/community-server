@@ -3,7 +3,7 @@ from time import sleep
 
 import hadar as hd
 
-from schelduler.storage import JobRepository, Job
+from scheduler.storage import JobRepository, Job
 
 
 class TestJobRepository(unittest.TestCase):

@@ -1,6 +1,6 @@
 import pickle
 import unittest
-from schelduler.server import application, repo
+from scheduler.server import application, repo
 from storage import Job
 
 
