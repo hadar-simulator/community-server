@@ -6,8 +6,8 @@ from time import sleep
 from flask import Flask, request, abort, render_template
 import hadar as hd
 
-from server.storage import JobRepository, Job, sha256
-import server
+from schelduler.storage import JobRepository, Job, sha256
+import schelduler
 
 
 def worker():
@@ -60,8 +60,6 @@ def create_app():
     :return: Flask app
     """
     app = Flask(__name__)
-    threading.Thread(target=worker).start()
-    threading.Thread(target=garbage).start()
     return app
 
 
@@ -71,12 +69,14 @@ def auth():
         abort(403, 'Wrong access token given')
 
 
-JobRepository()  # Start before eveyone to create table
+repo = JobRepository()  # Start before everyone to create table
 application = create_app()
+
 
 @application.route('/', methods=['GET'])
 def home():
-    return render_template('home.html', version=server.__version__)
+    return render_template('home.html', version=schelduler.__version__)
+
 
 @application.route("/study", methods=['POST'])
 def send_study():
@@ -86,7 +86,6 @@ def send_study():
     :return:
     """
     auth()
-    repo = JobRepository()
 
     print('Receive study', end=' ')
     study = pickle.loads(request.data)
@@ -107,7 +106,6 @@ def get_result(job_id: str):
     """
     auth()
 
-    repo = JobRepository()
     job = repo.get(job_id)
     if job is None:
         abort(404, 'Job id not found')
@@ -121,6 +119,28 @@ def get_result(job_id: str):
     elif job.status == 'ERROR':
         return pickle.dumps({'status': job.status, 'message': job.error})
 
+
+@application.route('/job/next', methods=['GET'])
+def get_next_job():
+    """
+    Get next job available to compute.
+
+    :return:
+    """
+    auth()
+
+    job = repo.get_next()
+    job.status = 'COMPUTING'
+    repo.save(job)
+    return pickle.dumps(job)
+
+
+@application.route('/job/<id>', methods=['POST'])
+def update_job(id: int):
+    job = pickle.loads(request.data)
+    job.status = 'TERMINATED'
+    repo.save(job)
+    return {}, 200
 
 if __name__ == '__main__':
     application.run(debug=False, host='0.0.0.0', port=5007)

@@ -3,7 +3,7 @@ from time import sleep
 
 import hadar as hd
 
-from storage import JobRepository, Job
+from schelduler.storage import JobRepository, Job
 
 
 class TestJobRepository(unittest.TestCase):
@@ -26,7 +26,7 @@ class TestJobRepository(unittest.TestCase):
         self.assertIsNone(job.result)
         self.assertEqual('wrong', job.error)
 
-    def test_delete_terminted(self):
+    def test_delete_terminated(self):
         t = self.repo.save(Job(study='aaa', status='TERMINATED'))
         e = self.repo.save(Job(study='bbb', status='ERROR'))
         q = self.repo.save(Job(study='ccc', status='QUEUED'))

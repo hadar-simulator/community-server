@@ -34,7 +34,7 @@ class Job:
         self.result = result
         self.error = error
 
-    def __reduce__(self):
+    def flatten(self):
         return self.id, pickle.dumps(self.study), self.created, self.status, pickle.dumps(self.result), self.error
 
 
@@ -49,7 +49,7 @@ class JobRepository:
 
         :param path: sqlite3 path to database
         """
-        path = path or os.getenv('DB_PATH', 'db.sqlite3')
+        path = path or os.getenv('DB_PATH', ':memory:')
 
         self.conn = sqlite3.connect(path)
         self.cur = self.conn.cursor()
@@ -77,7 +77,7 @@ class JobRepository:
         :param job: job to save
         :return:
         """
-        data = job.__reduce__()
+        data = job.flatten()
         exist = self.get(job.id) is not None
 
         lock.acquire()
