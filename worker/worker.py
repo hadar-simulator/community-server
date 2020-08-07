@@ -5,6 +5,7 @@ from time import sleep
 import requests
 import hadar as hd
 
+
 class Job:
     """
     Entity stored in db.
@@ -29,8 +30,12 @@ class Client:
 
     def get_next_job(self) -> Job:
         url = '%s/job/next' % self.base
-        r = requests.get(url)
-        return pickle.loads(r.content)
+        try:
+            r = requests.get(url)
+            return pickle.loads(r.content)
+        except requests.ConnectionError:
+            print('Failed to connect to %s' % self.base)
+            return None
 
     def send_job(self, job: Job) -> str:
         url = '%s/job/%s' % (self.base, job.id)

@@ -49,7 +49,7 @@ class JobRepository:
 
         :param path: sqlite3 path to database
         """
-        path = path or os.getenv('DB_PATH', ':memory:')
+        path = path or os.getenv('DB_PATH', 'db.sqlite3')
 
         self.conn = sqlite3.connect(path)
         self.cur = self.conn.cursor()

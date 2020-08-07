@@ -1,7 +1,9 @@
+import os
 import pickle
 import unittest
-from scheduler.server import application, repo
-from storage import Job
+
+from scheduler.server import application
+from storage import Job, JobRepository
 
 
 class TestServer(unittest.TestCase):
@@ -10,7 +12,11 @@ class TestServer(unittest.TestCase):
         application.config['WTF_CSRF_ENABLED'] = False
         application.config['DEBUG'] = False
 
+        self.repo = JobRepository()
         self.app = application.test_client()
+
+    def tearDown(self) -> None:
+        os.remove('db.sqlite3')
 
     def test_send_study(self):
         res = self.app.post('/study', data=pickle.dumps('Hello Study'))
@@ -22,14 +28,14 @@ class TestServer(unittest.TestCase):
         self.assertEqual(1, res['progress'])
 
         # Verify repo
-        job = repo.get(res['job'])
+        job = self.repo.get(res['job'])
         self.assertIsNotNone(job)
         self.assertEqual('Hello Study', job.study)
 
     def test_get_result_terminated(self):
         # Input
         job = Job(study='Hello world', id='123', created=147, status='TERMINATED', result='Bonjour le monde')
-        repo.save(job)
+        self.repo.save(job)
 
         # Test & Verify
         res = self.app.get('/result/123')
@@ -40,8 +46,8 @@ class TestServer(unittest.TestCase):
 
     def test_get_result_queued(self):
         # Input
-        repo.save(Job(study='Hello world', id='456', created=100, status='QUEUED', result=''))
-        repo.save(Job(study='Hello world', id='123', created=147, status='QUEUED', result=''))
+        self.repo.save(Job(study='Hello world', id='456', created=100, status='QUEUED', result=''))
+        self.repo.save(Job(study='Hello world', id='123', created=147, status='QUEUED', result=''))
 
         # Test & Verify
         res = self.app.get('/result/123')
@@ -50,18 +56,9 @@ class TestServer(unittest.TestCase):
         self.assertEqual('QUEUED', res['status'])
         self.assertEqual(1, res['progress'])
 
-    def test_get_result_computing(self):
-        # Input
-        repo.save(Job(study='Hello world', id='123', created=147, status='COMPUTING', result=''))
-
-        # Test & Verify
-        res = self.app.get('/result/123')
-        res = pickle.loads(res.data)
-        self.assertEqual('COMPUTING', res['status'])
-
     def test_get_next_job(self):
         # Input
-        repo.save(Job(study='Hello world', id='123', created=147, status='QUEUED', result=''))
+        self.repo.save(Job(study='Hello world', id='123', created=147, status='QUEUED', result=''))
 
         # Test & Verify
         res = self.app.get('/job/next')
@@ -77,6 +74,6 @@ class TestServer(unittest.TestCase):
         # Test & Verify
         self.app.post('/job/123', data=pickle.dumps(job))
 
-        saved = repo.get('123')
+        saved = self.repo.get('123')
         self.assertEqual('Bonjour le monde', saved.result)
         self.assertEqual('TERMINATED', saved.status)

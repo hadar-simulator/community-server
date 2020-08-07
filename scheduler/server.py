@@ -46,6 +46,7 @@ def send_study():
     """
     auth()
 
+    repo = JobRepository()
     print('Receive study', end=' ')
     study = pickle.loads(request.data)
     job = Job(study)
@@ -65,6 +66,7 @@ def get_result(job_id: str):
     """
     auth()
 
+    repo = JobRepository()
     job = repo.get(job_id)
     if job is None:
         abort(404, 'Job id not found')
@@ -88,14 +90,21 @@ def get_next_job():
     """
     auth()
 
+    repo = JobRepository()
     job = repo.get_next()
-    job.status = 'COMPUTING'
-    repo.save(job)
-    return pickle.dumps(job)
+    if job:
+        job.status = 'COMPUTING'
+        repo.save(job)
+        return pickle.dumps(job)
+    else:
+        return pickle.dumps(None)
 
 
 @application.route('/job/<id>', methods=['POST'])
 def update_job(id: int):
+    auth()
+
+    repo = JobRepository()
     job = pickle.loads(request.data)
     job.status = 'TERMINATED'
     repo.save(job)
@@ -103,5 +112,5 @@ def update_job(id: int):
 
 
 if __name__ == '__main__':
-    application.run(debug=False, host='0.0.0.0', port=5007)
+    application.run(debug=False, host='0.0.0.0', port=8765)
 
