@@ -1,10 +1,11 @@
 import os
 import pickle
+import time
 from time import sleep
 
 from flask import Flask, request, abort, render_template
 
-from scheduler.storage import JobRepository, Job, sha256
+from scheduler.storage import JobRepository, JobDTO, sha256
 import scheduler
 
 def garbage():
@@ -47,7 +48,7 @@ def receive_study():
     repo = JobRepository()
     print('Receive study', end=' ')
     study = request.data
-    job = Job(study)
+    job = JobDTO(study=study, version='1')
     if repo.get(job.id) is None:
         repo.save(job)
 
@@ -92,6 +93,7 @@ def get_next_job():
     job = repo.get_next()
     if job:
         job.status = 'COMPUTING'
+        job.computed = int(time.time() * 1000)
         repo.save(job)
         return pickle.dumps(job)
     else:
@@ -105,6 +107,7 @@ def update_job(id: int):
     repo = JobRepository()
     job = pickle.loads(request.data)
     job.status = 'TERMINATED'
+    job.terminated = int(time.time() * 1000)
     repo.save(job)
     return id, 200
 

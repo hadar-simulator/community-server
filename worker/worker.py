@@ -6,29 +6,36 @@ import requests
 import hadar as hd
 
 
-class Job:
+class JobDTO:
     """
     Entity stored in db.
     """
     def __init__(self, study: bytes,
+                 version: str,
+                 created: int = 0,
+                 computed: int = 0,
+                 terminated: int = 0,
                  id: str = None,
-                 created: int = None,
                  status: str = 'QUEUED',
-                 result: hd.Result = None,
+                 result: bytes = None,
                  error: str = ''):
-        self.study = study
         self.created = created
+        self.computed = computed
+        self.terminated = terminated
         self.status = status
         self.id = id
-        self.result = result
+        self.version = version
         self.error = error
+        self.study = study
+        self.result = result
+        self.id = id
 
 
 class Client:
     def __init__(self, url: str):
         self.base = url
 
-    def get_next_job(self) -> Job:
+    def get_next_job(self) -> JobDTO:
         url = '%s/job/next' % self.base
         try:
             r = requests.get(url)
@@ -37,7 +44,7 @@ class Client:
             print('Failed to connect to %s' % self.base)
             return None
 
-    def send_job(self, job: Job) -> str:
+    def send_job(self, job: JobDTO) -> str:
         url = '%s/job/%s' % (self.base, job.id)
         data = pickle.dumps(job)
         r = requests.post(url, data=data, headers={'Content-Length': str(len(data))})

@@ -4,7 +4,7 @@ import unittest
 import hadar as hd
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
-from worker.worker import Job, compute, Client
+from worker.worker import compute, Client, JobDTO
 
 
 class MockSchedulerServer(BaseHTTPRequestHandler):
@@ -34,7 +34,7 @@ class MockSchedulerServer(BaseHTTPRequestHandler):
                     .production(name='prod', cost=10, quantity=10)\
             .build()
 
-        job = Job(study=study, id='123', created=147, status='QUEUED')
+        job = JobDTO(study=study, id='123', version='1', created=147, status='QUEUED')
         data = pickle.dumps(job)
 
         self.send_response(200)

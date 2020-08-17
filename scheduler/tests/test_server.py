@@ -1,9 +1,10 @@
 import os
 import pickle
+import shutil
 import unittest
 
 from scheduler.server import application
-from storage import Job, JobRepository
+from storage import JobDTO, JobRepository
 
 
 class TestServer(unittest.TestCase):
@@ -16,7 +17,8 @@ class TestServer(unittest.TestCase):
         self.app = application.test_client()
 
     def tearDown(self) -> None:
-        os.remove('db.sqlite3')
+        if os.path.exists('data'):
+            shutil.rmtree('data')
 
     def test_send_study(self):
         res = self.app.post('/study', data=pickle.dumps('Hello Study'))
@@ -34,7 +36,7 @@ class TestServer(unittest.TestCase):
 
     def test_get_result_terminated(self):
         # Input
-        job = Job(study=b'Hello world', id='123', created=147, status='TERMINATED', result=b'Bonjour le monde')
+        job = JobDTO(study=b'Hello world', id='123', version='1', created=147, status='TERMINATED', result=b'Bonjour le monde')
         self.repo.save(job)
 
         # Test & Verify
@@ -46,8 +48,8 @@ class TestServer(unittest.TestCase):
 
     def test_get_result_queued(self):
         # Input
-        self.repo.save(Job(study=b'Hello world', id='456', created=100, status='QUEUED', result=b''))
-        self.repo.save(Job(study=b'Hello world', id='123', created=147, status='QUEUED', result=b''))
+        self.repo.save(JobDTO(study=b'Hello world', id='456', version='1',  created=100, status='QUEUED', result=b''))
+        self.repo.save(JobDTO(study=b'Hello world', id='123', version='1',  created=147, status='QUEUED', result=b''))
 
         # Test & Verify
         res = self.app.get('/result/123')
@@ -58,7 +60,7 @@ class TestServer(unittest.TestCase):
 
     def test_get_next_job(self):
         # Input
-        self.repo.save(Job(study=b'Hello world', id='123', created=147, status='QUEUED', result=b''))
+        self.repo.save(JobDTO(study=b'Hello world', id='123', version='1',  created=147, status='QUEUED', result=b''))
 
         # Test & Verify
         res = self.app.get('/job/next')
@@ -69,7 +71,7 @@ class TestServer(unittest.TestCase):
 
     def test_update_job(self):
         # Input
-        job = Job(study=b'Hello world', id='123', created=147, status='COMPUTING', result=b'Bonjour le monde')
+        job = JobDTO(study=b'Hello world', id='123', created=147, version='1',  status='COMPUTING', result=b'Bonjour le monde')
 
         # Test & Verify
         self.app.post('/job/123', data=pickle.dumps(job))

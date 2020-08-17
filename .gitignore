@@ -5,3 +5,5 @@
 *.tar.gz
 
 *.sqlite3
+
+**/data
