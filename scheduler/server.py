@@ -8,18 +8,6 @@ from flask import Flask, request, abort, render_template
 from scheduler.storage import JobRepository, JobDTO, sha256
 import scheduler
 
-def garbage():
-    """
-    Delete every minute all job tagged TERMINATED.
-
-    :return:
-    """
-    repo = JobRepository()
-
-    while True:
-        repo.delete_terminated()
-        sleep(int(os.getenv('GARBAGE_LOOP_SEC', '60')))
-
 
 def auth():
     token = os.environ.get('ACCESS_TOKEN', None)
@@ -43,12 +31,17 @@ def receive_study():
 
     :return:
     """
+    print('Receive study', end=' ')
     auth()
 
     repo = JobRepository()
-    print('Receive study', end=' ')
+    # garbage data
+    timeout = os.getenv('DATA_EXPIRATION_MS', 24 * 60 * 60 * 1000)  # Keep 24h by default
+    repo.delete_terminated(timeout)
+
     study = request.data
     job = JobDTO(study=study, version='1')
+
     if repo.get(job.id) is None:
         repo.save(job)
 

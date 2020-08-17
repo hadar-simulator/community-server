@@ -151,14 +151,18 @@ class JobRepository:
         lock.release()
         return self._map_job(res) if res else None
 
-    def delete_terminated(self):
+    def delete_terminated(self, timeout: int):
         """
         Delete job terminated.
+        :param timeout: timeout (millisecond) when job must be deleted
 
         :return:
         """
+        expiration = int(time.time() * 1000) - timeout
         lock.acquire()
-        ids = self.cur.execute("SELECT id FROM job WHERE (status = 'TERMINATED' OR status = 'ERROR')")
+        ids = self.cur.execute("SELECT id FROM job "
+                               "WHERE ((status = 'TERMINATED' OR status = 'ERROR') "
+                               "AND terminated < ?)", (expiration, ))
         for (i, ) in tuple(ids):
             os.remove(self.studies_dir + i)
             os.remove(self.results_dir + i)

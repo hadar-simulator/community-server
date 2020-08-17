@@ -2,7 +2,7 @@ import os
 import pickle
 import shutil
 import unittest
-from time import sleep
+from time import sleep, time
 
 from scheduler.storage import JobRepository, JobDTO
 
@@ -32,12 +32,20 @@ class TestJobRepository(unittest.TestCase):
         self.assertTrue(os.path.exists('data/results/%s' % job.id))
 
     def test_delete_terminated(self):
-        t = self.repo.save(JobDTO(study=b'aaa', version='1', status='TERMINATED'))
-        e = self.repo.save(JobDTO(study=b'bbb', version='1', status='ERROR'))
-        q = self.repo.save(JobDTO(study=b'ccc', version='1', status='QUEUED'))
+        now = int(time() * 1000)
+        t = self.repo.save(JobDTO(study=b'aaa', version='1', terminated=now, status='TERMINATED'))
+        e = self.repo.save(JobDTO(study=b'bbb', version='1', terminated=now, status='ERROR'))
+        q = self.repo.save(JobDTO(study=b'ccc', version='1', terminated=now, status='QUEUED'))
 
-        self.repo.delete_terminated()
+        # Delete before timeout
+        self.repo.delete_terminated(timeout=1000)
+        self.assertIsNotNone(self.repo.get(t))
+        self.assertIsNotNone(self.repo.get(e))
+        self.assertIsNotNone(self.repo.get(q))
 
+        sleep(1)
+        # Delete after timeout
+        self.repo.delete_terminated(timeout=1000)
         self.assertIsNone(self.repo.get(t))
         self.assertIsNone(self.repo.get(e))
         self.assertIsNotNone(self.repo.get(q))
