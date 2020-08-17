@@ -39,6 +39,7 @@ Rainbow.extend("generic",[{matches:{1:[{name:"keyword.operator",pattern:/\=|\+/g
 <div style="text-align: center">
     <img width="20%" src="https://www.hadar-simulator.org/assets/img/avatar.png">
     <h1>Hadar Server Demo</h1>
+    <i>v{{ version }}</i>
 </div>
 
 
@@ -59,7 +60,7 @@ Rainbow.extend("generic",[{matches:{1:[{name:"keyword.operator",pattern:/\=|\+/g
     RTE ASSUMES NO RESPONSIBILITY FOR ANY KIND OF UNAVAILABILITY OCCURRED ON THIS SERVER.
 </p>
 
-<h3>Deploy compute on this server</h3>
+<h3>Send compute on this server</h3>
 <p>Switch from locally compute to cloud compute is very simple. Inside you Hadar code, you should have a line like:
 <pre><code data-language="generic">optim = hd.LPOptimizer()</code></pre> <br>
 
@@ -67,27 +68,16 @@ You just need to change by:
 <pre><code data-language="generic">optim = hd.RemoteOptimizer(url='https://demo.hadar-simulator.org')</code></pre></p>
 
 <h3>Deploy your own server</h3>
+
+<p style="margin-bottom: 20px">
 Server source code is available on <a href="https://github.com/hadar-simulator/simple-server">github</a>, it's packaged
 in docker image too.
-In the repository at <i>deploy/docker-compose.yaml</i>, you have a ready to use config to deploy your server. A copy is
-printed below, be sure copy is up-to-date:
-<pre>
-<code data-language="generic">
-    version: '3'
-    services:
-      hadar:
-        image: docker.pkg.github.com/hadar-simulator/community-server/server:{{ version }}
-        environment:
-          # ACCESS_TOKEN: 'password'
-          GARBAGE_LOOP_SEC: 30
-          DB_PATH: '/data/db.sqlite3'
-        ports:
-          - '8080:8080'
-        volumes:
-          - '/home/ubuntu/data:/data'
-</code>
-</pre>
-    <br>
+In the repository, you have a ready to use docker-compose config to deploy your server. A copy is
+printed below:
+</p>
+
+<script src="https://gist-it.appspot.com/github.com/hadar-simulator/community-server/blob/master/deploy/docker-compose.yaml"></script>
+
 
 Don't forget to change optimizer by:
 <pre><code data-language="generic">hd.Optimizer(url='your url', token='your token. or leave blank')</code></pre>
