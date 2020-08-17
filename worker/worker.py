@@ -4,31 +4,7 @@ from time import sleep
 
 import requests
 import hadar as hd
-
-
-class JobDTO:
-    """
-    Entity stored in db.
-    """
-    def __init__(self, study: bytes,
-                 version: str,
-                 created: int = 0,
-                 computed: int = 0,
-                 terminated: int = 0,
-                 id: str = None,
-                 status: str = 'QUEUED',
-                 result: bytes = None,
-                 error: str = ''):
-        self.created = created
-        self.computed = computed
-        self.terminated = terminated
-        self.status = status
-        self.id = id
-        self.version = version
-        self.error = error
-        self.study = study
-        self.result = result
-        self.id = id
+from models import JobDTO
 
 
 class Client:
@@ -79,6 +55,10 @@ def compute(client: Client):
 
 if __name__ == '__main__':
     url = os.getenv('SCHEDULER_URL', 'http://localhost:8765')
+    delay = int(os.getenv('DELAY_S', 0))
     client = Client(url)
+    sleep(delay)
+    print('Worker started with hadar version', hd.__version__)
+
     while True:
         compute(client)

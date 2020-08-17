@@ -1,0 +1,19 @@
+version: '3'
+services:
+
+  scheduler:
+    image: docker.pkg.github.com/hadar-simulator/community-server/scheduler:1
+    environment:
+      # ACCESS_TOKEN: 'password'
+      DATA_EXPIRATION_MS: 86400000 # 24h
+      DATA_PATH: '/data'
+    ports:
+    - '8080:8080'
+    volumes:
+    - '/Users/francoisjolain/projects/science/hadar-simulator/server/data:/data'
+
+  worker:
+    image: docker.pkg.github.com/hadar-simulator/community-server/worker:1-0.3.1
+    environment:
+      SCHEDULER_URL: http://scheduler:8080
+      DELAY_S: 5

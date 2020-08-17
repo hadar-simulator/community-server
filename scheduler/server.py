@@ -1,12 +1,19 @@
+import hashlib
 import os
 import pickle
 import time
-from time import sleep
 
 from flask import Flask, request, abort, render_template
 
-from scheduler.storage import JobRepository, JobDTO, sha256
+from models import JobDTO
+from scheduler.storage import JobRepository
 import scheduler
+
+
+def sha256(array):
+    m = hashlib.sha256()
+    m.update(array)
+    return m.hexdigest()
 
 
 def auth():
@@ -36,7 +43,7 @@ def receive_study():
 
     repo = JobRepository()
     # garbage data
-    timeout = os.getenv('DATA_EXPIRATION_MS', 24 * 60 * 60 * 1000)  # Keep 24h by default
+    timeout = int(os.getenv('DATA_EXPIRATION_MS', 24 * 60 * 60 * 1000))  # Keep 24h by default
     repo.delete_terminated(timeout)
 
     study = request.data
