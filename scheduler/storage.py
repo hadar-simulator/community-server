@@ -5,8 +5,6 @@ import sqlite3
 import threading
 import time
 
-import hadar as hd
-
 
 lock = threading.Lock()
 
@@ -21,21 +19,21 @@ class Job:
     """
     Entity stored in db.
     """
-    def __init__(self, study: hd.Study,
+    def __init__(self, study: bytes,
                  id: str = None,
                  created: int = None,
                  status: str = 'QUEUED',
-                 result: hd.Result = None,
+                 result: bytes = None,
                  error: str = ''):
         self.study = study
         self.created = int(time.time() * 1000) if created is None else created
         self.status = status
-        self.id = sha256(pickle.dumps(study)) if id is None else id
+        self.id = sha256(study) if id is None else id
         self.result = result
         self.error = error
 
     def flatten(self):
-        return self.id, pickle.dumps(self.study), self.created, self.status, pickle.dumps(self.result), self.error
+        return self.id, self.study, self.created, self.status, self.result, self.error
 
 
 class JobRepository:
@@ -102,7 +100,7 @@ class JobRepository:
         lock.release()
         if res:
             job_id, study, created, status, result, error = res
-            return Job(id=job_id, study=pickle.loads(study), created=created, status=status, result=pickle.loads(result), error=error)
+            return Job(id=job_id, study=study, created=created, status=status, result=result, error=error)
         else:
             return None
 
@@ -137,6 +135,6 @@ class JobRepository:
         lock.release()
         if res:
             job_id, study, created, status, result, error = res
-            return Job(id=job_id, study=pickle.loads(study), created=created, status=status, result=pickle.loads(result), error=error)
+            return Job(id=job_id, study=study, created=created, status=status, result=result, error=error)
         else:
             return None

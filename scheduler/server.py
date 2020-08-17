@@ -1,10 +1,8 @@
 import os
 import pickle
-import threading
 from time import sleep
 
 from flask import Flask, request, abort, render_template
-import hadar as hd
 
 from scheduler.storage import JobRepository, Job, sha256
 import scheduler
@@ -38,7 +36,7 @@ def home():
 
 
 @application.route("/study", methods=['POST'])
-def send_study():
+def receive_study():
     """
     Receive study, put into queue and respond with study id.
 
@@ -48,7 +46,7 @@ def send_study():
 
     repo = JobRepository()
     print('Receive study', end=' ')
-    study = pickle.loads(request.data)
+    study = request.data
     job = Job(study)
     if repo.get(job.id) is None:
         repo.save(job)

@@ -30,11 +30,11 @@ class TestServer(unittest.TestCase):
         # Verify repo
         job = self.repo.get(res['job'])
         self.assertIsNotNone(job)
-        self.assertEqual('Hello Study', job.study)
+        self.assertEqual('Hello Study', pickle.loads(job.study))
 
     def test_get_result_terminated(self):
         # Input
-        job = Job(study='Hello world', id='123', created=147, status='TERMINATED', result='Bonjour le monde')
+        job = Job(study=b'Hello world', id='123', created=147, status='TERMINATED', result=b'Bonjour le monde')
         self.repo.save(job)
 
         # Test & Verify
@@ -42,12 +42,12 @@ class TestServer(unittest.TestCase):
         res = pickle.loads(res.data)
 
         self.assertEqual('TERMINATED', res['status'])
-        self.assertEqual('Bonjour le monde', res['result'])
+        self.assertEqual(b'Bonjour le monde', res['result'])
 
     def test_get_result_queued(self):
         # Input
-        self.repo.save(Job(study='Hello world', id='456', created=100, status='QUEUED', result=''))
-        self.repo.save(Job(study='Hello world', id='123', created=147, status='QUEUED', result=''))
+        self.repo.save(Job(study=b'Hello world', id='456', created=100, status='QUEUED', result=b''))
+        self.repo.save(Job(study=b'Hello world', id='123', created=147, status='QUEUED', result=b''))
 
         # Test & Verify
         res = self.app.get('/result/123')
@@ -58,7 +58,7 @@ class TestServer(unittest.TestCase):
 
     def test_get_next_job(self):
         # Input
-        self.repo.save(Job(study='Hello world', id='123', created=147, status='QUEUED', result=''))
+        self.repo.save(Job(study=b'Hello world', id='123', created=147, status='QUEUED', result=b''))
 
         # Test & Verify
         res = self.app.get('/job/next')
@@ -69,11 +69,11 @@ class TestServer(unittest.TestCase):
 
     def test_update_job(self):
         # Input
-        job = Job(study='Hello world', id='123', created=147, status='COMPUTING', result='Bonjour le monde')
+        job = Job(study=b'Hello world', id='123', created=147, status='COMPUTING', result=b'Bonjour le monde')
 
         # Test & Verify
         self.app.post('/job/123', data=pickle.dumps(job))
 
         saved = self.repo.get('123')
-        self.assertEqual('Bonjour le monde', saved.result)
+        self.assertEqual(b'Bonjour le monde', saved.result)
         self.assertEqual('TERMINATED', saved.status)

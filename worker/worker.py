@@ -10,7 +10,7 @@ class Job:
     """
     Entity stored in db.
     """
-    def __init__(self, study: hd.Study,
+    def __init__(self, study: bytes,
                  id: str = None,
                  created: int = None,
                  status: str = 'QUEUED',
@@ -56,8 +56,8 @@ def compute(client: Client):
         try:
             print('Start job:', job.id)
             optim = hd.LPOptimizer()
-            res = optim.solve(job.study)
-            job.result = res
+            res = optim.solve(pickle.loads(job.study))
+            job.result = pickle.dumps(res)
             print('Finish job:', job.id)
         except Exception as e:
             job.status = 'ERROR'

@@ -8,7 +8,7 @@ class E2ETest(unittest.TestCase):
         study = hd.Study(horizon=1)\
             .network()\
                 .node('a')\
-                    .consumption(name='load', cost=1000, quantity=10)\
+                    .consumption(name='load', cost=100, quantity=10)\
                     .production(name='prod', cost=10, quantity=10)\
             .build()
 
