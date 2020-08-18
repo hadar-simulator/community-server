@@ -13,7 +13,7 @@ jobs:
       run: |
         export PYTHONPATH=$(pwd)
         export SCHEDULER_VERSION=$(python3 -c "import scheduler; print(scheduler.__version__)")
-        docker build -t docker.pkg.github.com/hadar-simulator/community-server/scheduler:$VERSION -f scheduler/Dockerfile .
+        docker build -t docker.pkg.github.com/hadar-simulator/community-server/scheduler:$SCHEDULER_VERSION -f scheduler/Dockerfile .
     - name: Build worker
       run: |
         echo $SCHEDULER-VERSION
