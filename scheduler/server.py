@@ -28,7 +28,10 @@ application = Flask(__name__)
 
 @application.route('/', methods=['GET'])
 def home():
-    return render_template('home.html', version=scheduler.__version__)
+    host = request.environ.get('HTTP_HOST', '')
+    token = 'ACCESS_TOKEN' in os.environ
+
+    return render_template('home.html', version=scheduler.__version__, host=host, token=token)
 
 
 @application.route("/study", methods=['POST'])
