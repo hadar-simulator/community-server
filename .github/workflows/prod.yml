@@ -1,4 +1,4 @@
-name: Docker Image CI
+name: Package and E2E
 
 on:
   push:
@@ -12,7 +12,7 @@ jobs:
     - name: Build scheduler
       run: |
         export PYTHONPATH=$(pwd)
-        export SCHEDULER-VERSION=$(python3 -c "import scheduler; print(scheduler.__version__)")
+        export SCHEDULER_VERSION=$(python3 -c "import scheduler; print(scheduler.__version__)")
         docker build -t docker.pkg.github.com/hadar-simulator/community-server/scheduler:$VERSION -f scheduler/Dockerfile .
     - name: Build worker
       run: |
