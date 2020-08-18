@@ -13,8 +13,7 @@ jobs:
     - name: Install dependencies
       run: |
         docker-compose -h
-        python -m pip install --upgrade pip
-        pip install -r hadar
+        pip install hadar
         export VERSION=$(python3 -c 'import hadar; print(hadar.__version__)')
         echo "::set-env name=HADAR_VERSION::$VERSION"
 
