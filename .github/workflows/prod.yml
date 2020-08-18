@@ -16,7 +16,7 @@ jobs:
         docker build -t docker.pkg.github.com/hadar-simulator/community-server/scheduler:$SCHEDULER_VERSION -f scheduler/Dockerfile .
     - name: Build worker
       run: |
-        echo $SCHEDULER-VERSION
+        echo $SCHEDULER_VERSION
         docker login docker.pkg.github.com -u $GITHUB_ACTOR -p $TOKEN
       env:
         TOKEN: ${{ secrets.GITHUB_TOKEN }}
