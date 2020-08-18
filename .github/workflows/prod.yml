@@ -18,6 +18,11 @@ jobs:
     - name: Build worker
       run: |
         echo $SCHEDULER_VERSION
+        source .env # set HADAR_VERSION variable
+        docker build -t docker.pkg.github.com/hadar-simulator/community-server/worker:$SCHEDULER_VERSION-$HADAR_VERSION --build-arg HADAR_VERSION=$HADAR_VERSION -f worker/Dockerfile .
+    - name: E2E
+      run: |
+        docker images
         docker login docker.pkg.github.com -u $GITHUB_ACTOR -p $TOKEN
       env:
         TOKEN: ${{ secrets.GITHUB_TOKEN }}
