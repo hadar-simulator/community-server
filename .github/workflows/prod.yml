@@ -12,7 +12,7 @@ jobs:
     - name: Build scheduler
       run: |
         export PYTHONPATH=$(pwd)
-        ::set-env name=SCHEDULER_VERSION::$(python3 -c "import scheduler; print(scheduler.__version__)")
+        echo "::set-env name=SCHEDULER_VERSION::$(python3 -c 'import scheduler; print(scheduler.__version__)')"
         docker build -t docker.pkg.github.com/hadar-simulator/community-server/scheduler:$SCHEDULER_VERSION -f scheduler/Dockerfile .
     - name: Build worker
       run: |
