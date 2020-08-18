@@ -4,7 +4,7 @@ import unittest
 import hadar as hd
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
-from worker.worker import compute, Client, JobDTO
+from worker.run import compute, Client, JobDTO
 
 
 class MockSchedulerServer(BaseHTTPRequestHandler):
