@@ -1,6 +1,6 @@
 import hashlib
+import json
 import os
-import pickle
 import time
 
 from flask import Flask, request, abort, render_template
@@ -43,19 +43,19 @@ def receive_study():
     """
     print('Receive study', end=' ')
     auth()
-
     repo = JobRepository()
+
     # garbage data
     timeout = int(os.getenv('DATA_EXPIRATION_MS', 24 * 60 * 60 * 1000))  # Keep 24h by default
     repo.delete_terminated(timeout)
 
-    study = request.data
+    study = json.loads(request.data)
     job = JobDTO(study=study, version='1')
 
     if repo.get(job.id) is None:
         repo.save(job)
 
-    return pickle.dumps({'job': job.id, 'status': 'QUEUED', 'progress': max(1, repo.count_jobs_before(job))})
+    return json.dumps({'job': job.id, 'status': 'QUEUED', 'progress': max(1, repo.count_jobs_before(job))})
 
 
 @application.route("/result/<job_id>", methods=['GET'])
@@ -74,13 +74,13 @@ def get_result(job_id: str):
         abort(404, 'Job id not found')
 
     elif job.status == 'QUEUED':
-        return pickle.dumps({'status': job.status, 'progress': repo.count_jobs_before(job)})
+        return json.dumps({'status': job.status, 'progress': repo.count_jobs_before(job)})
     elif job.status in 'COMPUTING':
-        return pickle.dumps({'status': job.status, 'progress': 0})
+        return json.dumps({'status': job.status, 'progress': 0})
     elif job.status == 'TERMINATED':
-        return pickle.dumps({'status': job.status, 'result': job.result})
+        return json.dumps({'status': job.status, 'result': job.result})
     elif job.status == 'ERROR':
-        return pickle.dumps({'status': job.status, 'message': job.error})
+        return json.dumps({'status': job.status, 'message': job.error})
 
 
 @application.route('/job/next', methods=['GET'])
@@ -98,9 +98,9 @@ def get_next_job():
         job.status = 'COMPUTING'
         job.computed = int(time.time() * 1000)
         repo.save(job)
-        return pickle.dumps(job)
+        return json.dumps(job.to_json())
     else:
-        return pickle.dumps(None)
+        return json.dumps({})
 
 
 @application.route('/job/<id>', methods=['POST'])
@@ -108,7 +108,7 @@ def update_job(id: int):
     auth()
 
     repo = JobRepository()
-    job = pickle.loads(request.data)
+    job = JobDTO.from_json(json.loads(request.data))
     job.status = 'TERMINATED'
     job.terminated = int(time.time() * 1000)
     repo.save(job)

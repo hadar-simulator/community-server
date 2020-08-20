@@ -1,5 +1,5 @@
 import os
-import pickle
+import json
 import shutil
 import unittest
 
@@ -21,8 +21,8 @@ class TestServer(unittest.TestCase):
             shutil.rmtree('data')
 
     def test_send_study(self):
-        res = self.app.post('/study', data=pickle.dumps('Hello Study'))
-        res = pickle.loads(res.data)
+        res = self.app.post('/study', data=json.dumps('Hello Study'))
+        res = json.loads(res.data)
 
         # Verify response
         self.assertIsNotNone(res['job'])
@@ -32,50 +32,50 @@ class TestServer(unittest.TestCase):
         # Verify repo
         job = self.repo.get(res['job'])
         self.assertIsNotNone(job)
-        self.assertEqual('Hello Study', pickle.loads(job.study))
+        self.assertEqual('Hello Study', job.study)
 
     def test_get_result_terminated(self):
         # Input
-        job = JobDTO(study=b'Hello world', id='123', version='1', created=147, status='TERMINATED', result=b'Bonjour le monde')
+        job = JobDTO(study='Hello world', id='123', version='1', created=147, status='TERMINATED', result='Bonjour le monde')
         self.repo.save(job)
 
         # Test & Verify
         res = self.app.get('/result/123')
-        res = pickle.loads(res.data)
+        res = json.loads(res.data)
 
         self.assertEqual('TERMINATED', res['status'])
-        self.assertEqual(b'Bonjour le monde', res['result'])
+        self.assertEqual('Bonjour le monde', res['result'])
 
     def test_get_result_queued(self):
         # Input
-        self.repo.save(JobDTO(study=b'Hello world', id='456', version='1',  created=100, status='QUEUED', result=b''))
-        self.repo.save(JobDTO(study=b'Hello world', id='123', version='1',  created=147, status='QUEUED', result=b''))
+        self.repo.save(JobDTO(study='Hello world', id='456', version='1',  created=100, status='QUEUED', result=''))
+        self.repo.save(JobDTO(study='Hello world', id='123', version='1',  created=147, status='QUEUED', result=''))
 
         # Test & Verify
         res = self.app.get('/result/123')
-        res = pickle.loads(res.data)
+        res = json.loads(res.data)
 
         self.assertEqual('QUEUED', res['status'])
         self.assertEqual(1, res['progress'])
 
     def test_get_next_job(self):
         # Input
-        self.repo.save(JobDTO(study=b'Hello world', id='123', version='1',  created=147, status='QUEUED', result=b''))
+        self.repo.save(JobDTO(study='Hello world', id='123', version='1',  created=147, status='QUEUED', result=''))
 
         # Test & Verify
         res = self.app.get('/job/next')
-        job = pickle.loads(res.data)
+        job = JobDTO.from_json(json.loads(res.data))
         self.assertIsNotNone(job)
         self.assertIsNotNone(job.study)
         self.assertEqual('123', job.id)
 
     def test_update_job(self):
         # Input
-        job = JobDTO(study=b'Hello world', id='123', created=147, version='1',  status='COMPUTING', result=b'Bonjour le monde')
+        job = JobDTO(study='Hello world', id='123', created=147, version='1',  status='COMPUTING', result='Bonjour le monde')
 
         # Test & Verify
-        self.app.post('/job/123', data=pickle.dumps(job))
+        self.app.post('/job/123', data=json.dumps(job.to_json()))
 
         saved = self.repo.get('123')
-        self.assertEqual(b'Bonjour le monde', saved.result)
+        self.assertEqual('Bonjour le monde', saved.result)
         self.assertEqual('TERMINATED', saved.status)

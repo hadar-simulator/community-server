@@ -1,5 +1,5 @@
 import os
-import pickle
+import json
 from time import sleep
 
 import requests
@@ -12,18 +12,15 @@ class Client:
         self.base = url
 
     def get_next_job(self) -> JobDTO:
-        url = '%s/job/next' % self.base
         try:
-            r = requests.get(url)
-            return pickle.loads(r.content)
+            r = requests.get('%s/job/next' % self.base).json()
+            return None if r == {} else JobDTO.from_json(r)
         except requests.ConnectionError:
             print('Failed to connect to %s' % self.base)
-            return None
 
     def send_job(self, job: JobDTO) -> str:
         url = '%s/job/%s' % (self.base, job.id)
-        data = pickle.dumps(job)
-        r = requests.post(url, data=data, headers={'Content-Length': str(len(data))})
+        r = requests.post(url, json=job.to_json())
         return r.content.decode('ascii')
 
 
@@ -39,18 +36,17 @@ def compute(client: Client):
         try:
             print('Start job:', job.id)
             optim = hd.LPOptimizer()
-            res = optim.solve(pickle.loads(job.study))
-            job.result = pickle.dumps(res)
+            res = optim.solve(hd.Study.from_json(job.study))
+            job.result = res.to_json()
             print('Finish job:', job.id)
         except Exception as e:
             job.status = 'ERROR'
             job.error = str(e)
-            print('Error on job:', job.id)
+            print('Error on job', job.id, ':', e)
         finally:
             return client.send_job(job)
     else:
         sleep(1)
-        return None
 
 
 if __name__ == '__main__':

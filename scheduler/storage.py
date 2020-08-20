@@ -1,4 +1,5 @@
 import hashlib
+import json
 import os
 import sqlite3
 from threading import Lock
@@ -69,10 +70,10 @@ class JobRepository:
 
         # Save on disk
         with open(self.studies_dir + job.id, 'wb') as f:
-            f.write(job.study)
+            f.write(json.dumps(job.study).encode())
 
         with open(self.results_dir + job.id, 'wb') as f:
-            f.write(job.result or b'')
+            f.write(json.dumps(job.result).encode() or b'')
 
         lock.release()
         return job.id
@@ -86,13 +87,12 @@ class JobRepository:
         job_id, version, created, computed, terminated, status, error = res
 
         with open(self.studies_dir + job_id, 'rb') as f:
-            study = f.read()
+            study = json.loads(f.read())
         with open(self.results_dir + job_id, 'rb') as f:
-            result = f.read()
+            result = json.loads(f.read())
 
         return JobDTO(id=job_id, version=version, study=study, created=created, computed=computed,
                       terminated=terminated, status=status, result=result, error=error)
-
 
     def get(self, job_id: str):
         """
