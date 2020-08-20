@@ -139,9 +139,10 @@ class JobRepository:
         lock.release()
         return counting
 
-    def get_next(self):
+    def get_next(self, version: str):
         lock.acquire()
         res = self.cur.execute("""SELECT * FROM job
-                                  WHERE created = (SELECT MIN(created) FROM job WHERE status = 'QUEUED');""").fetchone()
+                                  WHERE created = (SELECT MIN(created) FROM job 
+                                  WHERE (status = 'QUEUED' AND version = ?));""", (version,)).fetchone()
         lock.release()
         return self._map_job(res) if res else None

@@ -13,7 +13,7 @@ class JobDTO:
     Entity stored in db.
     """
     def __init__(self, study: dict(),
-                 version: str,
+                 version: str = None,
                  created: int = 0,
                  computed: int = 0,
                  terminated: int = 0,
@@ -26,7 +26,7 @@ class JobDTO:
         self.terminated = terminated
         self.status = status
         self.id = id
-        self.version = version
+        self.version = version or study['version']
         self.error = error
         self.study = study
         self.result = result

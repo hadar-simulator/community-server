@@ -60,10 +60,10 @@ class TestServer(unittest.TestCase):
 
     def test_get_next_job(self):
         # Input
-        self.repo.save(JobDTO(study='Hello world', id='123', version='1',  created=147, status='QUEUED', result=''))
+        self.repo.save(JobDTO(study='Hello world', id='123', version='1.1',  created=147, status='QUEUED', result=''))
 
         # Test & Verify
-        res = self.app.get('/job/next')
+        res = self.app.get('/job/next/1.1')
         job = JobDTO.from_json(json.loads(res.data))
         self.assertIsNotNone(job)
         self.assertIsNotNone(job.study)

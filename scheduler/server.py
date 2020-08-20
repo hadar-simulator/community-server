@@ -50,7 +50,7 @@ def receive_study():
     repo.delete_terminated(timeout)
 
     study = json.loads(request.data)
-    job = JobDTO(study=study, version='1')
+    job = JobDTO(study=study)
 
     if repo.get(job.id) is None:
         repo.save(job)
@@ -83,8 +83,8 @@ def get_result(job_id: str):
         return json.dumps({'status': job.status, 'message': job.error})
 
 
-@application.route('/job/next', methods=['GET'])
-def get_next_job():
+@application.route('/job/next/<version>', methods=['GET'])
+def get_next_job(version: str):
     """
     Get next job available to compute.
 
@@ -93,7 +93,7 @@ def get_next_job():
     auth()
 
     repo = JobRepository()
-    job = repo.get_next()
+    job = repo.get_next(version)
     if job:
         job.status = 'COMPUTING'
         job.computed = int(time.time() * 1000)

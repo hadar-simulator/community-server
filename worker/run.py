@@ -8,12 +8,12 @@ from models import JobDTO
 
 
 class Client:
-    def __init__(self, url: str):
-        self.base = url
+    def __init__(self, host: str):
+        self.base = host
 
     def get_next_job(self) -> JobDTO:
         try:
-            r = requests.get('%s/job/next' % self.base).json()
+            r = requests.get('%s/job/next/%s' % (self.base, hd.__version__)).json()
             return None if r == {} else JobDTO.from_json(r)
         except requests.ConnectionError:
             print('Failed to connect to %s' % self.base)
@@ -51,9 +51,7 @@ def compute(client: Client):
 
 if __name__ == '__main__':
     url = os.getenv('SCHEDULER_URL', 'http://localhost:8765')
-    delay = int(os.getenv('DELAY_S', 0))
     client = Client(url)
-    sleep(delay)
     print('Worker started with hadar version', hd.__version__)
 
     while True:
