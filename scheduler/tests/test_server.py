@@ -21,7 +21,7 @@ class TestServer(unittest.TestCase):
             shutil.rmtree('data')
 
     def test_send_study(self):
-        res = self.app.post('/study', data=json.dumps('Hello Study'))
+        res = self.app.post('/study', data=json.dumps({'version': '1'}))
         res = json.loads(res.data)
 
         # Verify response
@@ -32,7 +32,7 @@ class TestServer(unittest.TestCase):
         # Verify repo
         job = self.repo.get(res['job'])
         self.assertIsNotNone(job)
-        self.assertEqual('Hello Study', job.study)
+        self.assertEqual({'version': '1'}, job.study)
 
     def test_get_result_terminated(self):
         # Input
