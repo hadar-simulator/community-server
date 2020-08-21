@@ -21,7 +21,7 @@ class TestServer(unittest.TestCase):
             shutil.rmtree('data')
 
     def test_send_study(self):
-        res = self.app.post('/study', data=json.dumps({'version': '1'}))
+        res = self.app.post('/api/v2/study', data=json.dumps({'version': '1'}))
         res = json.loads(res.data)
 
         # Verify response
@@ -40,7 +40,7 @@ class TestServer(unittest.TestCase):
         self.repo.save(job)
 
         # Test & Verify
-        res = self.app.get('/result/123')
+        res = self.app.get('/api/v2/result/123')
         res = json.loads(res.data)
 
         self.assertEqual('TERMINATED', res['status'])
@@ -52,7 +52,7 @@ class TestServer(unittest.TestCase):
         self.repo.save(JobDTO(study='Hello world', id='123', version='1',  created=147, status='QUEUED', result=''))
 
         # Test & Verify
-        res = self.app.get('/result/123')
+        res = self.app.get('/api/v2/result/123')
         res = json.loads(res.data)
 
         self.assertEqual('QUEUED', res['status'])
@@ -63,7 +63,7 @@ class TestServer(unittest.TestCase):
         self.repo.save(JobDTO(study='Hello world', id='123', version='1.1',  created=147, status='QUEUED', result=''))
 
         # Test & Verify
-        res = self.app.get('/job/next/1.1')
+        res = self.app.get('/api/v2/job/next/1.1')
         job = JobDTO.from_json(json.loads(res.data))
         self.assertIsNotNone(job)
         self.assertIsNotNone(job.study)
@@ -74,7 +74,7 @@ class TestServer(unittest.TestCase):
         job = JobDTO(study='Hello world', id='123', created=147, version='1',  status='COMPUTING', result='Bonjour le monde')
 
         # Test & Verify
-        self.app.post('/job/123', data=json.dumps(job.to_json()))
+        self.app.post('/api/v2/job/123', data=json.dumps(job.to_json()))
 
         saved = self.repo.get('123')
         self.assertEqual('Bonjour le monde', saved.result)

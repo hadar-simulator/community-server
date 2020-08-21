@@ -20,6 +20,9 @@ class TestJobRepository(unittest.TestCase):
 
         self.repo.save(job)
 
+        self.assertTrue(self.repo.exists(job.id))
+        self.assertFalse(self.repo.exists('123'))
+
         job = self.repo.get(job.id)
         self.assertIsNotNone(job.id)
         self.assertTrue(job.created > 0)

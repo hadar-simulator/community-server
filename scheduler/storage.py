@@ -55,8 +55,7 @@ class JobRepository:
         :param job: job to save
         :return:
         """
-        exist = self.get(job.id) is not None
-
+        exist = self.exists(job.id)
         lock.acquire()
         # Save in DB
         if exist:
@@ -105,6 +104,17 @@ class JobRepository:
         res = self.cur.execute("SELECT * FROM job WHERE id = ?", (job_id,)).fetchone()
         lock.release()
         return self._map_job(res) if res else None
+
+    def exists(self, job_id: str):
+        """
+        Get true if job exist else false
+        :param job_id: job id to find
+        :return: true or false
+        """
+        lock.acquire()
+        res = self.cur.execute("SELECT COUNT(id) FROM job WHERE id = ?", (job_id,)).fetchone()
+        lock.release()
+        return res[0] > 0
 
     def delete_terminated(self, timeout: int):
         """

@@ -49,7 +49,8 @@ def handle_twice(handle_request):
 
 
 class TestWorker(unittest.TestCase):
-    def test_compute(self):
+    # TODO enable test when hadar 0.4.0 is available
+    def notest_compute(self):
         # Start server
         httpd = HTTPServer(('localhost', 6964), MockSchedulerServer)
         server = threading.Thread(None, handle_twice, None, (httpd.handle_request,))

@@ -4,6 +4,7 @@ import os
 import time
 
 from flask import Flask, request, abort, render_template
+from flask_cors import CORS, cross_origin
 
 from models import JobDTO
 from scheduler.storage import JobRepository
@@ -17,24 +18,30 @@ def sha256(array):
 
 
 def auth():
-    token = os.environ.get('ACCESS_TOKEN', None)
-    if token is not None and sha256(request.args['token'].encode()) != sha256(token.encode()):
+    if TOKEN is not None and sha256(request.args['token'].encode()) != sha256(TOKEN.encode()):
         abort(403, 'Wrong access token given')
 
 
-repo = JobRepository()  # Start before everyone to create table
+JobRepository()  # Start before everyone to create table
 application = Flask(__name__)
+CORS(application)
+
+INTERN_ORIGIN = os.environ.get('INTERN_ORIGIN', '*')
+TOKEN = os.environ.get('ACCESS_TOKEN', None)
+DATA_EXPIRATION = int(os.getenv('DATA_EXPIRATION_MS', 24 * 60 * 60 * 1000))  # Keep 24h by default
+VERSION = scheduler.__version__
 
 
-@application.route('/', methods=['GET'])
+@application.route('/', methods=['GET', 'OPTION'])
+@cross_origin(origin='*')
 def home():
     host = request.environ.get('HTTP_HOST', '')
-    token = 'ACCESS_TOKEN' in os.environ
 
-    return render_template('home.html', version=scheduler.__version__, host=host, token=token)
+    return render_template('home.html', version=VERSION, host=host, token=TOKEN is not None)
 
 
-@application.route("/study", methods=['POST'])
+@application.route("/api/v%s/study" % VERSION, methods=['POST', 'OPTION'])
+@cross_origin(origin='*')
 def receive_study():
     """
     Receive study, put into queue and respond with study id.
@@ -46,19 +53,19 @@ def receive_study():
     repo = JobRepository()
 
     # garbage data
-    timeout = int(os.getenv('DATA_EXPIRATION_MS', 24 * 60 * 60 * 1000))  # Keep 24h by default
-    repo.delete_terminated(timeout)
+    repo.delete_terminated(DATA_EXPIRATION)
 
     study = json.loads(request.data)
     job = JobDTO(study=study)
 
-    if repo.get(job.id) is None:
+    if not repo.exists(job.id):
         repo.save(job)
 
     return json.dumps({'job': job.id, 'status': 'QUEUED', 'progress': max(1, repo.count_jobs_before(job))})
 
 
-@application.route("/result/<job_id>", methods=['GET'])
+@application.route("/api/v%s/result/<job_id>" % VERSION, methods=['GET', 'OPTION'])
+@cross_origin(origin='*')
 def get_result(job_id: str):
     """
     Check if job is terminated, respond with result in this case.
@@ -83,14 +90,14 @@ def get_result(job_id: str):
         return json.dumps({'status': job.status, 'message': job.error})
 
 
-@application.route('/job/next/<version>', methods=['GET'])
+@application.route('/api/v%s/job/next/<version>' % VERSION, methods=['GET', 'OPTION'])
+@cross_origin(origin=INTERN_ORIGIN)
 def get_next_job(version: str):
     """
     Get next job available to compute.
 
     :return:
     """
-    auth()
 
     repo = JobRepository()
     job = repo.get_next(version)
@@ -103,9 +110,9 @@ def get_next_job(version: str):
         return json.dumps({})
 
 
-@application.route('/job/<id>', methods=['POST'])
+@application.route('/api/v%s/job/<id>' % VERSION, methods=['POST', 'OPTION'])
+@cross_origin(origin=INTERN_ORIGIN)
 def update_job(id: int):
-    auth()
 
     repo = JobRepository()
     job = JobDTO.from_json(json.loads(request.data))

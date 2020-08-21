@@ -1,5 +1,4 @@
 import os
-import json
 from time import sleep
 
 import requests
@@ -13,13 +12,13 @@ class Client:
 
     def get_next_job(self) -> JobDTO:
         try:
-            r = requests.get('%s/job/next/%s' % (self.base, hd.__version__)).json()
+            r = requests.get('%s/api/v2/job/next/%s' % (self.base, hd.__version__)).json()
             return None if r == {} else JobDTO.from_json(r)
         except requests.ConnectionError:
             print('Failed to connect to %s' % self.base)
 
     def send_job(self, job: JobDTO) -> str:
-        url = '%s/job/%s' % (self.base, job.id)
+        url = '%s/api/v2/job/%s' % (self.base, job.id)
         r = requests.post(url, json=job.to_json())
         return r.content.decode('ascii')
 
