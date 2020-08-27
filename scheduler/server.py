@@ -40,7 +40,7 @@ def home():
     return render_template('home.html', version=VERSION, host=host, token=TOKEN is not None)
 
 
-@application.route("/api/v%s/study" % VERSION, methods=['POST', 'OPTION'])
+@application.route("/api/v1/study", methods=['POST', 'OPTION'])
 @cross_origin(origin='*')
 def receive_study():
     """
@@ -64,7 +64,7 @@ def receive_study():
     return json.dumps({'job': job.id, 'status': 'QUEUED', 'progress': max(1, repo.count_jobs_before(job))})
 
 
-@application.route("/api/v%s/result/<job_id>" % VERSION, methods=['GET', 'OPTION'])
+@application.route("/api/v1/result/<job_id>", methods=['GET', 'OPTION'])
 @cross_origin(origin='*')
 def get_result(job_id: str):
     """
@@ -90,7 +90,7 @@ def get_result(job_id: str):
         return json.dumps({'status': job.status, 'message': job.error})
 
 
-@application.route('/api/v%s/job/next/<version>' % VERSION, methods=['GET', 'OPTION'])
+@application.route('/api/v1/job/next/<version>', methods=['GET', 'OPTION'])
 @cross_origin(origin=INTERN_ORIGIN)
 def get_next_job(version: str):
     """
@@ -110,7 +110,7 @@ def get_next_job(version: str):
         return json.dumps({})
 
 
-@application.route('/api/v%s/job/<id>' % VERSION, methods=['POST', 'OPTION'])
+@application.route('/api/v1/job/<id>', methods=['POST', 'OPTION'])
 @cross_origin(origin=INTERN_ORIGIN)
 def update_job(id: int):
 
