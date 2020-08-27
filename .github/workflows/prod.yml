@@ -34,6 +34,7 @@ jobs:
 
     - name: E2E
       run: |
+        docker login docker.pkg.github.com -u $GITHUB_ACTOR -p $TOKEN
         docker-compose up -d
         python3 -m unittest discover e2e
         docker-compose down
@@ -45,3 +46,10 @@ jobs:
         docker push docker.pkg.github.com/hadar-simulator/community-server/worker:$SCHEDULER_VERSION-$HADAR_VERSION
       env:
         TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Deploy
+      run: |
+        ssh-add - <<< "${SSH_PRIVATE_KEY}"
+        ssh ubuntu@demo.hadar-simulator.org
+      env:
+        TOKEN: ${{ secrets.SSH_PRIVATE_KEY }}
