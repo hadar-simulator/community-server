@@ -55,4 +55,4 @@ jobs:
         ssh-add - <<< "${SSH_PRIVATE_KEY}"
         ssh ubuntu@demo.hadar-simulator.org
       env:
-        TOKEN: ${{ secrets.SSH_PRIVATE_KEY }}
+        SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
