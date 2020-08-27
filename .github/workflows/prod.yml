@@ -53,6 +53,6 @@ jobs:
     - name: Deploy
       run: |
         echo "$SSH_PRIVATE_KEY" > key
-        ssh -i key ubuntu@demo.hadar-simulator.org
+        ssh -tt -i key ubuntu@demo.hadar-simulator.org
       env:
         SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
