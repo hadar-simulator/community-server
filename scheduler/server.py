@@ -1,9 +1,10 @@
 import hashlib
+import json
 import os
-import pickle
 import time
 
 from flask import Flask, request, abort, render_template
+from flask_cors import CORS, cross_origin
 
 from models import JobDTO
 from scheduler.storage import JobRepository
@@ -17,24 +18,30 @@ def sha256(array):
 
 
 def auth():
-    token = os.environ.get('ACCESS_TOKEN', None)
-    if token is not None and sha256(request.args['token'].encode()) != sha256(token.encode()):
+    if TOKEN is not None and sha256(request.args['token'].encode()) != sha256(TOKEN.encode()):
         abort(403, 'Wrong access token given')
 
 
-repo = JobRepository()  # Start before everyone to create table
+JobRepository()  # Start before everyone to create table
 application = Flask(__name__)
+CORS(application)
+
+INTERN_ORIGIN = os.environ.get('INTERN_ORIGIN', '*')
+TOKEN = os.environ.get('ACCESS_TOKEN', None)
+DATA_EXPIRATION = int(os.getenv('DATA_EXPIRATION_MS', 24 * 60 * 60 * 1000))  # Keep 24h by default
+VERSION = scheduler.__version__
 
 
-@application.route('/', methods=['GET'])
+@application.route('/', methods=['GET', 'OPTION'])
+@cross_origin(origin='*')
 def home():
     host = request.environ.get('HTTP_HOST', '')
-    token = 'ACCESS_TOKEN' in os.environ
 
-    return render_template('home.html', version=scheduler.__version__, host=host, token=token)
+    return render_template('home.html', version=VERSION, host=host, token=TOKEN is not None)
 
 
-@application.route("/study", methods=['POST'])
+@application.route("/api/v1/study", methods=['POST', 'OPTION'])
+@cross_origin(origin='*')
 def receive_study():
     """
     Receive study, put into queue and respond with study id.
@@ -43,22 +50,22 @@ def receive_study():
     """
     print('Receive study', end=' ')
     auth()
-
     repo = JobRepository()
+
     # garbage data
-    timeout = int(os.getenv('DATA_EXPIRATION_MS', 24 * 60 * 60 * 1000))  # Keep 24h by default
-    repo.delete_terminated(timeout)
+    repo.delete_terminated(DATA_EXPIRATION)
 
-    study = request.data
-    job = JobDTO(study=study, version='1')
+    study = json.loads(request.data)
+    job = JobDTO(study=study)
 
-    if repo.get(job.id) is None:
+    if not repo.exists(job.id):
         repo.save(job)
 
-    return pickle.dumps({'job': job.id, 'status': 'QUEUED', 'progress': max(1, repo.count_jobs_before(job))})
+    return json.dumps({'job': job.id, 'status': 'QUEUED', 'progress': max(1, repo.count_jobs_before(job))})
 
 
-@application.route("/result/<job_id>", methods=['GET'])
+@application.route("/api/v1/result/<job_id>", methods=['GET', 'OPTION'])
+@cross_origin(origin='*')
 def get_result(job_id: str):
     """
     Check if job is terminated, respond with result in this case.
@@ -74,41 +81,41 @@ def get_result(job_id: str):
         abort(404, 'Job id not found')
 
     elif job.status == 'QUEUED':
-        return pickle.dumps({'status': job.status, 'progress': repo.count_jobs_before(job)})
+        return json.dumps({'status': job.status, 'progress': repo.count_jobs_before(job)})
     elif job.status in 'COMPUTING':
-        return pickle.dumps({'status': job.status, 'progress': 0})
+        return json.dumps({'status': job.status, 'progress': 0})
     elif job.status == 'TERMINATED':
-        return pickle.dumps({'status': job.status, 'result': job.result})
+        return json.dumps({'status': job.status, 'result': job.result})
     elif job.status == 'ERROR':
-        return pickle.dumps({'status': job.status, 'message': job.error})
+        return json.dumps({'status': job.status, 'message': job.error})
 
 
-@application.route('/job/next', methods=['GET'])
-def get_next_job():
+@application.route('/api/v1/job/next/<version>', methods=['GET', 'OPTION'])
+@cross_origin(origin=INTERN_ORIGIN)
+def get_next_job(version: str):
     """
     Get next job available to compute.
 
     :return:
     """
-    auth()
 
     repo = JobRepository()
-    job = repo.get_next()
+    job = repo.get_next(version)
     if job:
         job.status = 'COMPUTING'
         job.computed = int(time.time() * 1000)
         repo.save(job)
-        return pickle.dumps(job)
+        return json.dumps(job.to_json())
     else:
-        return pickle.dumps(None)
+        return json.dumps({})
 
 
-@application.route('/job/<id>', methods=['POST'])
+@application.route('/api/v1/job/<id>', methods=['POST', 'OPTION'])
+@cross_origin(origin=INTERN_ORIGIN)
 def update_job(id: int):
-    auth()
 
     repo = JobRepository()
-    job = pickle.loads(request.data)
+    job = JobDTO.from_json(json.loads(request.data))
     job.status = 'TERMINATED'
     job.terminated = int(time.time() * 1000)
     repo.save(job)

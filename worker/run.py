@@ -1,5 +1,4 @@
 import os
-import pickle
 from time import sleep
 
 import requests
@@ -8,22 +7,19 @@ from models import JobDTO
 
 
 class Client:
-    def __init__(self, url: str):
-        self.base = url
+    def __init__(self, host: str):
+        self.base = host
 
     def get_next_job(self) -> JobDTO:
-        url = '%s/job/next' % self.base
         try:
-            r = requests.get(url)
-            return pickle.loads(r.content)
+            r = requests.get('%s/api/v2/job/next/%s' % (self.base, hd.__version__)).json()
+            return None if r == {} else JobDTO.from_json(r)
         except requests.ConnectionError:
             print('Failed to connect to %s' % self.base)
-            return None
 
     def send_job(self, job: JobDTO) -> str:
-        url = '%s/job/%s' % (self.base, job.id)
-        data = pickle.dumps(job)
-        r = requests.post(url, data=data, headers={'Content-Length': str(len(data))})
+        url = '%s/api/v2/job/%s' % (self.base, job.id)
+        r = requests.post(url, json=job.to_json())
         return r.content.decode('ascii')
 
 
@@ -39,25 +35,22 @@ def compute(client: Client):
         try:
             print('Start job:', job.id)
             optim = hd.LPOptimizer()
-            res = optim.solve(pickle.loads(job.study))
-            job.result = pickle.dumps(res)
+            res = optim.solve(hd.Study.from_json(job.study))
+            job.result = res.to_json()
             print('Finish job:', job.id)
         except Exception as e:
             job.status = 'ERROR'
             job.error = str(e)
-            print('Error on job:', job.id)
+            print('Error on job', job.id, ':', e)
         finally:
             return client.send_job(job)
     else:
         sleep(1)
-        return None
 
 
 if __name__ == '__main__':
     url = os.getenv('SCHEDULER_URL', 'http://localhost:8765')
-    delay = int(os.getenv('DELAY_S', 0))
     client = Client(url)
-    sleep(delay)
     print('Worker started with hadar version', hd.__version__)
 
     while True:

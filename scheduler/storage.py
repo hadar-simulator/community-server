@@ -1,4 +1,5 @@
 import hashlib
+import json
 import os
 import sqlite3
 from threading import Lock
@@ -54,8 +55,7 @@ class JobRepository:
         :param job: job to save
         :return:
         """
-        exist = self.get(job.id) is not None
-
+        exist = self.exists(job.id)
         lock.acquire()
         # Save in DB
         if exist:
@@ -69,10 +69,10 @@ class JobRepository:
 
         # Save on disk
         with open(self.studies_dir + job.id, 'wb') as f:
-            f.write(job.study)
+            f.write(json.dumps(job.study).encode())
 
         with open(self.results_dir + job.id, 'wb') as f:
-            f.write(job.result or b'')
+            f.write(json.dumps(job.result).encode() or b'')
 
         lock.release()
         return job.id
@@ -86,13 +86,12 @@ class JobRepository:
         job_id, version, created, computed, terminated, status, error = res
 
         with open(self.studies_dir + job_id, 'rb') as f:
-            study = f.read()
+            study = json.loads(f.read())
         with open(self.results_dir + job_id, 'rb') as f:
-            result = f.read()
+            result = json.loads(f.read())
 
         return JobDTO(id=job_id, version=version, study=study, created=created, computed=computed,
                       terminated=terminated, status=status, result=result, error=error)
-
 
     def get(self, job_id: str):
         """
@@ -105,6 +104,17 @@ class JobRepository:
         res = self.cur.execute("SELECT * FROM job WHERE id = ?", (job_id,)).fetchone()
         lock.release()
         return self._map_job(res) if res else None
+
+    def exists(self, job_id: str):
+        """
+        Get true if job exist else false
+        :param job_id: job id to find
+        :return: true or false
+        """
+        lock.acquire()
+        res = self.cur.execute("SELECT COUNT(id) FROM job WHERE id = ?", (job_id,)).fetchone()
+        lock.release()
+        return res[0] > 0
 
     def delete_terminated(self, timeout: int):
         """
@@ -139,9 +149,10 @@ class JobRepository:
         lock.release()
         return counting
 
-    def get_next(self):
+    def get_next(self, version: str):
         lock.acquire()
         res = self.cur.execute("""SELECT * FROM job
-                                  WHERE created = (SELECT MIN(created) FROM job WHERE status = 'QUEUED');""").fetchone()
+                                  WHERE created = (SELECT MIN(created) FROM job 
+                                  WHERE (status = 'QUEUED' AND version = ?));""", (version,)).fetchone()
         lock.release()
         return self._map_job(res) if res else None
