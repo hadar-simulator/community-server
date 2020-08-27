@@ -52,7 +52,7 @@ jobs:
 
     - name: Deploy
       run: |
-        ssh-add - <<< "${SSH_PRIVATE_KEY}"
-        ssh ubuntu@demo.hadar-simulator.org
+        echo "${SSH_PRIVATE_KEY}" > key
+        ssh -i key ubuntu@demo.hadar-simulator.org
       env:
         SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
