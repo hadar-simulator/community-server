@@ -36,6 +36,7 @@ jobs:
       run: |
         docker login docker.pkg.github.com -u $GITHUB_ACTOR -p $TOKEN
         docker-compose up -d
+        sleep 2
         python3 -m unittest discover e2e
         docker-compose down
       env:
