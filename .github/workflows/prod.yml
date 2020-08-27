@@ -38,6 +38,8 @@ jobs:
         docker-compose up -d
         python3 -m unittest discover e2e
         docker-compose down
+      env:
+        TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Push
       run: |
